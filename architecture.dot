@@ -1,0 +1,57 @@
+digraph linux {
+	compound = true
+	init [label = "init (often the service manager)"]
+	service [label = "service manager (systemd, open-rc,...)"]
+	kernel
+
+	subgraph cluster_filesystem {
+		label = "filesystem"
+		"root" [label = "/" ]
+		home [label = "/home/<user>"]
+		dev [label = "/dev/<device>"]
+		boot [label = "/boot/efi -> /dev/sda1"]
+		"root" -> home
+		"root" -> dev
+		"root" -> boot
+		"root" -> "/tmp -> tmpfs"
+		"root" -> "/etc (config files)"
+	}
+
+	subgraph cluster_storage {
+		label = "storage"
+		device [label = "block device (disk, usb, partition, file,...) /dev/sdX"]
+		part_table[label = "partition table (DOS (legacy), GPT (UEFI))"]
+		ppart [label = "physical partitions /dev/sdXY"]
+		plvm [label = "LVM physical volume"]
+		lpart [label="LVM logical partitions"]
+		fpart [label = "partition format (btrfs, ext4, swap)"]
+
+		device -> part_table
+		part_table -> ppart
+		ppart -> fpart
+		ppart -> plvm
+
+		plvm -> lpart
+		lpart -> fpart
+	}
+
+	subgraph cluster_rendering {
+		label = "graphical rendering"
+		xorg
+		wayland
+
+		xwm [label = "window managers (dwm, bspwm, awesomewm,...)"]
+		wwm [label = "window managers (hyprland, sway, dwl, river,...)"]
+
+		xorg -> xwm
+		wayland -> wwm
+	}
+
+
+	kernel -> "root"
+	kernel -> init
+	init -> service
+	service -> xorg [lhead = cluster_rendering]
+	service -> "services (network, ssh,...)"
+	kernel -> device [lhead = cluster_storage]
+}
